@@ -4,22 +4,27 @@ jobs:
   build:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: 'recursive'
-      - uses: aseprite/get-skia@main
-        with:
-          skia-out: skia
-      - name: Install dependencies
+      
+      - name: Download Skia
+        run: |
+          curl -L https://github.com/aseprite/skia/releases/download/m102-861e4743af/Skia-Windows-Release-x64.zip --output skia.zip
+          7z x skia.zip -oskia
+          
+      - name: Install Ninja
         run: choco install ninja
+        
       - name: Compiling
         run: |
           mkdir build
           cd build
           cmake -G Ninja -DLAF_BACKEND=skia -DSKIA_DIR=../skia -DSKIA_LIBRARY_DIR=../skia/out/Release-x64 ..
           ninja aseprite
+          
       - name: Upload result
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: aseprite-windows
           path: build/bin/aseprite.exe
