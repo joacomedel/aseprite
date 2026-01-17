@@ -1,4 +1,4 @@
-name: Build Aseprite Final Fix
+name: Build Aseprite Oficial Logic
 on: [workflow_dispatch]
 
 jobs:
@@ -9,42 +9,35 @@ jobs:
       with:
         submodules: 'recursive'
 
-    - name: Download Skia
+    - name: Install Skia (Official Script Method)
       shell: bash
       run: |
-        curl -L https://github.com/aseprite/skia/releases/download/m102-861e4743af/Skia-Windows-Release-x64.zip -o skia.zip
+        # Usamos el script interno de Aseprite para obtener la URL correcta
+        skia_url=$(source laf/misc/skia-url.sh | xargs)
+        curl -L -o skia.zip "$skia_url"
         7z x skia.zip -oskia
-        # FIX: Crear las rutas que CMake está pidiendo desesperadamente
-        mkdir -p skia/third_party/externals/icu/flutter/
-        touch skia/third_party/externals/icu/flutter/icudtl.dat
-        mkdir -p skia/third_party/externals/libjpeg-turbo
 
     - uses: aseprite/get-ninja@main
     - uses: ilammy/msvc-dev-cmd@v1
 
-    - name: Run CMake
+    - name: Generating Makefiles
       shell: bash
       run: |
-        export SKIA_DIR=$(pwd)/skia
-        mkdir build
-        cd build
-        cmake -G Ninja \
+        # Esta configuración es la que usa el equipo de Aseprite en sus servidores
+        cmake -S . -B build -G Ninja \
           -DCMAKE_BUILD_TYPE=RelWithDebInfo \
           -DLAF_BACKEND=skia \
-          -DSKIA_DIR=$SKIA_DIR \
-          -DSKIA_LIBRARY_DIR=$SKIA_DIR/out/Release-x64 \
-          -DSKIA_LIBRARY=$SKIA_DIR/out/Release-x64/skia.lib \
-          -DENABLE_UPDATER=OFF \
-          ..
+          -DSKIA_DIR=$(realpath skia) \
+          -DSKIA_LIBRARY_DIR=$(realpath skia/out/Release-x64) \
+          -DENABLE_UPDATER=OFF
 
     - name: Compiling
       shell: bash
       run: |
-        cd build
-        ninja aseprite
+        cd build && ninja aseprite
 
-    - name: Upload Result
+    - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: aseprite-portable
+        name: aseprite-build-oficial
         path: build/bin/aseprite.exe
