@@ -1,0 +1,25 @@
+name: Build Aseprite
+on: [workflow_dispatch]
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: 'recursive'
+      - uses: aseprite/get-skia@main
+        with:
+          skia-out: skia
+      - name: Install dependencies
+        run: choco install ninja
+      - name: Compiling
+        run: |
+          mkdir build
+          cd build
+          cmake -G Ninja -DLAF_BACKEND=skia -DSKIA_DIR=../skia -DSKIA_LIBRARY_DIR=../skia/out/Release-x64 ..
+          ninja aseprite
+      - name: Upload result
+        uses: actions/upload-artifact@v3
+        with:
+          name: aseprite-windows
+          path: build/bin/aseprite.exe
